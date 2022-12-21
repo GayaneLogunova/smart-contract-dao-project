@@ -33,27 +33,27 @@ contract ERC20 is IERC20 {
         mint(initialSupply, owner);
     }
 
-    function name() public view returns(string memory) {
+    function name() public override view returns(string memory) {
         return _name;
     }
 
-    function symbol() public view returns(string memory) {
+    function symbol() public override view returns(string memory) {
         return _symbol;
     }
 
-    function decimals() public pure returns(uint) {
+    function decimals() public override pure returns(uint) {
         return 18;
     }
 
-    function totalSupply() public view returns(uint) {
+    function totalSupply() public override view returns(uint) {
         return totalTokens;
     }
 
-    function balanceOf(address account) public view returns(uint) {
+    function balanceOf(address account) public override view returns(uint) {
         return balances[account];
     }
 
-    function transfer(address to, uint amount) external enoughTokens(msg.sender, amount) {
+    function transfer(address to, uint amount) external override enoughTokens(msg.sender, amount) {
         _beforeTokenTransfer(msg.sender, to, amount);
 
         balances[msg.sender] -= amount;
@@ -62,17 +62,17 @@ contract ERC20 is IERC20 {
         emit Transfer(msg.sender, to, amount);
     }
 
-    function allowance(address _owner, address spender) external view returns(uint) {
+    function allowance(address _owner, address spender) external override view returns(uint) {
         return allowances[_owner][spender];
     }
 
-    function approve(address spender, uint amount) external {
+    function approve(address spender, uint amount) external override {
         allowances[msg.sender][spender] = amount;
 
         emit Approve(msg.sender, spender, amount);
     }
 
-    function transferFrom(address sender, address recipient, uint amount) external {
+    function transferFrom(address sender, address recipient, uint amount) external override {
         _beforeTokenTransfer(sender, recipient, amount);
 
         allowances[sender][msg.sender] -= amount;

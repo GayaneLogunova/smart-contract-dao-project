@@ -9,7 +9,6 @@ contract Governance {
         uint againstVotes;
         uint forVotes;
         uint abstainVotes;
-        uint abstainVotes;
         mapping(address => bool) hasVoted;
     }
 
@@ -46,8 +45,8 @@ contract Governance {
         uint _value,
         string calldata _func,
         bytes calldata _data,
-        string calldata _description,
-    ) external enoughTokens(msg.sender, 0) {
+        string calldata _description
+    ) external enoughTokens(msg.sender, 0) returns(bytes32) {
         bytes32 proposalId = generateProposalId(
             _to, _value, _func, _data, keccak256(bytes(_description))
         );
@@ -59,6 +58,8 @@ contract Governance {
             votingEnds: block.timestamp + VOTING_DURATION,
             executed: false
         });
+
+        return proposalId;
     }
 
     function execute(
@@ -66,8 +67,8 @@ contract Governance {
         uint _value,
         string calldata _func,
         bytes calldata _data,
-        bytes32 _descriptionHash,
-    ) external {
+        bytes32 _descriptionHash
+    ) external returns(bytes memory) {
         bytes32 proposalId = generateProposalId(
             _to, _value, _func, _data, _descriptionHash
         );
@@ -78,13 +79,26 @@ contract Governance {
 
         proposal.executed = true;
 
-        //add
+        
+        bytes memory data;
+        if (bytes(_func).length > 0) {
+            data = abi.encodePacked(
+                bytes4(keccak256(bytes(_func))), _data
+            );
+        } else {
+            data = _data;
+        }
+
+        (bool success, bytes memory resp) = _to.call{value: _value}(data);
+        require(success, "Transaction failed.");
+
+        return resp;
     }
 
     function vote(bytes32 proposalId, uint8 voteType) external enoughTokens(msg.sender, 0) hasNotVoted(msg.sender, proposalId) {
         require(state(proposalId) == ProposalState.Active, "Invalid voting state.");
         uint votingPower = token.balanceOf(msg.sender);
-        ProposalVote storage proposalVote - proposalVotes[proposalId];
+        ProposalVote storage proposalVote = proposalVotes[proposalId];
 
         if(voteType == 0) {
             proposalVote.againstVotes += votingPower;
@@ -113,6 +127,7 @@ contract Governance {
 
         if(proposalVote.forVotes > proposalVote.againstVotes) {
             return ProposalState.Succeeded;
+        }
 
         return ProposalState.Defeated;
     }
@@ -122,7 +137,7 @@ contract Governance {
         uint _value,
         string calldata _func,
         bytes calldata _data,
-        bytes32 _descriptionHash,
+        bytes32 _descriptionHash
     ) internal pure returns(bytes32) {
         return keccak256(abi.encode(
             _to, _value, _func, _data, _descriptionHash
